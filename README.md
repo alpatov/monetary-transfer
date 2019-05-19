@@ -1,4 +1,4 @@
-### Revolut Java Developer Test 
+### Mone Transfer REST API 
 
 #### Design considerations
 
