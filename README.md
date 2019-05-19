@@ -1,4 +1,4 @@
-### Mone Transfer REST API 
+### Money Transfer REST API 
 
 #### Design considerations
 
