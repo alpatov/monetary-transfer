@@ -4,6 +4,7 @@ import com.monetary.transfer.exceptions.IntegrityException;
 import lombok.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import java.math.BigDecimal;
@@ -41,6 +42,10 @@ public class ElectronicTransfer {
      */
     @NotNull(message = "error.transfer.debit.required")
     @Positive(message = "error.transfer.debit.positiveness")
+    @DecimalMin(
+        message = "error.transfer.debit.min",
+        value = "0.01"
+    )
     private volatile BigDecimal debit;
 
     /**

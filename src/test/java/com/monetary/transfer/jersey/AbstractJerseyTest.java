@@ -1,11 +1,12 @@
 package com.monetary.transfer.jersey;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.monetary.transfer.exceptions.mappers.models.ErrorDto;
 import com.monetary.transfer.resources.ErrorMessagesRepository;
 import org.glassfish.jersey.test.JerseyTest;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,17 +22,24 @@ public class AbstractJerseyTest extends JerseyTest {
 
     protected final ErrorMessagesRepository errors = new ErrorMessagesRepository();
 
-    private List<String> retrieveErrorDescriptions(Response response, boolean single) {
-        return single
-                ? Collections.singletonList(
-                        response.readEntity(ErrorDto.class)
-                                .getDescription())
-                : response
-                    .readEntity(new GenericType<List<ErrorDto>>() {})
-                    .parallelStream()
-                    .map(ErrorDto::getDescription)
-                    .distinct()
-                    .collect(Collectors.toList());
+    private List<String> retrieveErrorDescriptions(Response response) {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = response.readEntity(String.class);
+        try {
+            CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, ErrorDto.class);
+            List<ErrorDto> errors = mapper.readValue(json, type);
+            return errors
+                        .parallelStream()
+                        .map(ErrorDto::getDescription)
+                        .distinct()
+                        .collect(Collectors.toList());
+        } catch (IOException e) {
+            try {
+                ErrorDto error = mapper.readValue(json, ErrorDto.class);
+                return Collections.singletonList(error.getDescription());
+            } catch (Exception ignore) {}
+        }
+        return Collections.emptyList();
     }
 
     /**
@@ -62,12 +70,7 @@ public class AbstractJerseyTest extends JerseyTest {
      *                      message that must be displayed as a reaction to the
      *                      constraint violation
      */
-    protected final void assertConstraintViolation(
-            String target,
-            String method,
-            Object json,
-            Response.Status status,
-            String... errorMessages) {
+    protected final void assertConstraintViolation(String target, String method, Object json, Response.Status status, String... errorMessages) {
         /*
          * Executing request to the API endpoint
          */
@@ -84,10 +87,7 @@ public class AbstractJerseyTest extends JerseyTest {
                 /*
                  * Checking for expected error messages
                  */
-                List<String> errorDescriptions = retrieveErrorDescriptions(
-                        response,
-                        errorMessages.length == 1
-                );
+                List<String> errorDescriptions = retrieveErrorDescriptions(response);
                 assertTrue(
                         errors.lookup("test.error.response.description.required"),
                         Arrays.stream(errorMessages)
@@ -115,12 +115,7 @@ public class AbstractJerseyTest extends JerseyTest {
      *                      message that must be displayed as a reaction to the
      *                      constraint violation
      */
-    protected final void assertConstraintViolation(
-            String target,
-            String method,
-            String jsonResource,
-            Response.Status status,
-            String... errorMessages) throws IOException {
+    protected final void assertConstraintViolation(String target, String method, String jsonResource, Response.Status status, String... errorMessages) throws IOException {
         Object json = readJsonResource(jsonResource);
         assertConstraintViolation(target, method, json, status, errorMessages);
     }

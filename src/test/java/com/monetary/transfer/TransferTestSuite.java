@@ -208,5 +208,12 @@ public class TransferTestSuite extends AbstractJerseyTest {
                 "test-data/malformed-debit.json",
                 Status.BAD_REQUEST
         );
+        assertConstraintViolation(
+                "/transfer",
+                "POST",
+                "test-data/impossible-debit.json",
+                Status.BAD_REQUEST,
+                "error.transfer.debit.min"
+        );
     }
 }
